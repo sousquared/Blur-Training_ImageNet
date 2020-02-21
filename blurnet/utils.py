@@ -59,11 +59,14 @@ class ProgressMeter(object):
     
 
 def save_checkpoint(state, is_best, param_path, epoch):
-    filename=param_path+'model_{:03d}.pth.tar'.format(epoch)
+    filename=param_path+'checkpoint.pth.tar'
     torch.save(state, filename)
     if is_best:
         shutil.copyfile(filename, param_path+'model_best.pth.tar')
         
+def save_model(state, param_path, epoch):
+    filename=param_path+'model_{:03d}.pth.tar'.format(epoch)
+    torch.save(state, filename)
         
 def adjust_learning_rate(optimizer, epoch, args):
     """Sets the learning rate to the initial LR decayed by 10 every 20 epochs"""
