@@ -81,8 +81,8 @@ parser.add_argument('--multiprocessing-distributed', action='store_true',
 ### BlurNet additional arguments
 parser.add_argument('--exp-name', '-n', type=str, default='',
                     help='Experiment name.')
-parser.add_argument('--normal', action='store_true', default=False,
-                    help='Normal training mode (w/o blurring images).')
+parser.add_argument('--mode', type=str, choices=['normal', 'blur-all', 'blur-half', 'blur-step', 'blur-half-data'],
+                    help='Training mode.')
 parser.add_argument('--kernel-size', '-k', type=int, nargs=2, default=(3,3),
                     help='Kernel size of Gaussian Blur.')
 parser.add_argument('--sigma', '-s', type=float, default=1,
@@ -121,6 +121,33 @@ def main():
     if args.gpu is not None:
         warnings.warn('You have chosen a specific GPU. This will completely '
                       'disable data parallelism.')
+    
+    # print settings
+    print('='*5 + ' settings ' + '='*5)
+    print('TRAINING MODE: {}'.format(args.mode))
+    if args.mode == 'blur-step':
+        print('### BLUR CHANGING STEPS ###')
+        print('Step: 1-10 -> 11-20 -> 21-30 -> 31-40 -> 41-{}'.format(args.epochs))
+        print('Sigma: 4 -> 3 -> 2 -> 1 -> none')
+        print('Kernel-size: (25, 25) -> (19, 19) -> (13, 13) -> (7, 7) -> none')
+        print('#'*20)
+    elif args.mode == 'blur-half':
+        print('### NO BLUR FROM EPOCH {:d} ###'.format(args.epochs // 2))
+        print('Sigma: {}'.format(args.sigma))
+        print('Kernel-size: {}'.format(tuple(args.kernel_size)))  # radius = sigma * 3 * 2 + 1
+    elif args.mode == 'blur-all':
+        print('Sigma: {}'.format(args.sigma))
+        print('Kernel-size: {}'.format(tuple(args.kernel_size)))  # radius = sigma * 3 * 2 + 1
+    print('Random seed: {}'.format(args.seed))
+    print('Epochs: {}'.format(args.epochs))
+    print('Learning rate: {}'.format(args.lr))
+    print('Weight_decay: {}'.format(args.weight_decay))
+    print()
+    print(model)
+    print('='*20)
+    print()
+    
+    torch.backends.cudnn.benchmark=True  # for fast training
 
     if args.dist_url == "env://" and args.world_size == -1:
         args.world_size = int(os.environ["WORLD_SIZE"])
@@ -138,8 +165,6 @@ def main():
     else:
         # Simply call main_worker function
         main_worker(args.gpu, ngpus_per_node, args)
-        
-    torch.backends.cudnn.benchmark=True  # for fast training
 
 
 def main_worker(gpu, ngpus_per_node, args):
@@ -337,6 +362,30 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
 
     # switch to train mode
     model.train()
+    
+    # blur settings
+    blur = True
+    if args.mode == 'normal':
+            blur = False
+        elif args.mode == 'blur-step':
+            ### BLUR-STEP SETTINGS ###
+            if epoch < 10:
+                args.sigma = 4
+                args.kernel_size = (25, 25)  # radius = sigma * 3 * 2 + 1
+            elif epoch < 20:
+                args.sigma = 3
+                args.kernel_size = (19, 19)
+            elif epoch < 30:
+                args.sigma = 2
+                args.kernel_size = (13, 13)
+            elif epoch < 40:
+                args.sigma = 1
+                args.kernel_size = (7, 7)
+            else:
+                blur = False
+        elif args.mode == 'blur-half':
+            if epoch >= args.epochs // 2:
+                blur = False
 
     end = time.time()
     for i, (images, target) in enumerate(train_loader):
@@ -344,9 +393,15 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         data_time.update(time.time() - end)
 
         # blur images
-        if epoch < 30:
-            images = GaussianBlurAll(images, tuple(args.kernel_size), args.sigma)
-        
+        if blur:
+            if args.mode == 'blur-half-data':
+                    half1, half2 = images.chunk(2)
+                    # blur first half images
+                    half1 = GaussianBlurAll(half1, tuple(args.kernel_size), args.sigma)
+                    images = torch.cat((half1, half2))
+            else:
+                images = GaussianBlurAll(images, tuple(args.kernel_size), args.sigma)  
+            
         if args.gpu is not None:
             images = images.cuda(args.gpu, non_blocking=True)
         target = target.cuda(args.gpu, non_blocking=True)
@@ -366,7 +421,6 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         loss.backward()
         optimizer.step()
 
-        
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
@@ -431,4 +485,3 @@ if __name__ == '__main__':
     mins = (time.time() - run_time) / 60
     hours = mins / 60
     print("Total run time: {:.4f}mins, {:.4f}hours".format(mins, hours)) 
-

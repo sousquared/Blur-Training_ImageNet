@@ -94,7 +94,19 @@ best_acc1 = 0
 def main():
     args = parser.parse_args()
     
+    # directories settings
+    os.makedirs('../logs/outputs', exist_ok=True)
+    os.makedirs('../logs/models/{}'.format(args.exp_name), exist_ok=True)
+    os.makedirs('../logs/tb', exist_ok=True)
     
+    OUTPUT_PATH = '../logs/outputs/{}.log'.format(args.exp_name)
+    if os.path.exists(OUTPUT_PATH):
+        print('ERROR: This experiment name is already used. Use another name for this experiment by \'--exp-name\'')
+        sys.exit()
+    # recording outputs
+    sys.stdout = open(OUTPUT_PATH, 'w')
+    sys.stderr = open(OUTPUT_PATH, 'a')
+
     if args.seed is not None:
         random.seed(args.seed)
         torch.manual_seed(args.seed)
@@ -104,22 +116,17 @@ def main():
                       'which can slow down your training considerably! '
                       'You may see unexpected behavior when restarting '
                       'from checkpoints.')
+        print('seed: {}'.format(args.seed))
 
     if args.gpu is not None:
         warnings.warn('You have chosen a specific GPU. This will completely '
                       'disable data parallelism.')
-    
-    print('args.gpu: {}'.format(args.gpu))
-    print('args.dist_url: {}'.format(args.dist_url))
+
     if args.dist_url == "env://" and args.world_size == -1:
         args.world_size = int(os.environ["WORLD_SIZE"])
-        print('WORLD_SIZE: {}'.format(os.environ["WORLD_SIZE"]))
-    print('args.world_size: {}'.format(args.world_size))
-    
-    print('args.multiprocessing_distributed: {}'.format(args.multiprocessing_distributed))
+
     args.distributed = args.world_size > 1 or args.multiprocessing_distributed
-    print('args.distributed: {}'.format(args.distributed))
-    """
+
     ngpus_per_node = torch.cuda.device_count()
     if args.multiprocessing_distributed:
         # Since we have ngpus_per_node processes per node, the total world_size
@@ -131,9 +138,10 @@ def main():
     else:
         # Simply call main_worker function
         main_worker(args.gpu, ngpus_per_node, args)
-        """
+        
+    torch.backends.cudnn.benchmark=True  # for fast training
 
-"""
+
 def main_worker(gpu, ngpus_per_node, args):
     global best_acc1
     args.gpu = gpu
@@ -215,6 +223,8 @@ def main_worker(gpu, ngpus_per_node, args):
                   .format(args.resume, checkpoint['epoch']))
         else:
             print("=> no checkpoint found at '{}'".format(args.resume))
+    else:
+        print('initial learning: {}'.format(args.lr))
 
     cudnn.benchmark = True
 
@@ -251,13 +261,15 @@ def main_worker(gpu, ngpus_per_node, args):
         ])),
         batch_size=args.batch_size, shuffle=False,
         num_workers=args.workers, pin_memory=True)
+    
+    print('batch size: {}'.format(args.batch_size))
 
     if args.evaluate:
         validate(val_loader, model, criterion, args)
         return
     
     # recording settings
-    PARAM_PATH = '../logs/params/{}/'.format(args.exp_name)
+    MODEL_PATH = '../logs/models/{}/'.format(args.exp_name)
     TB_PATH = '../logs/tb/{}'.format(args.exp_name)
     # tensorboardX
     writer = SummaryWriter(log_dir=TB_PATH)
@@ -265,7 +277,7 @@ def main_worker(gpu, ngpus_per_node, args):
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             train_sampler.set_epoch(epoch)
-        adjust_learning_rate(optimizer, epoch, args)
+        # adjust_learning_rate(optimizer, epoch, args)
 
         # train for one epoch
         train_time = time.time()
@@ -299,9 +311,19 @@ def main_worker(gpu, ngpus_per_node, args):
                 'state_dict': model.state_dict(),
                 'best_acc1': best_acc1,
                 'optimizer' : optimizer.state_dict(),
-            }, is_best, PARAM_PATH)
+                }, is_best, MODEL_PATH, epoch + 1)
+            if (epoch + 1) % 10 == 0:  # save model every 10 epochs
+                save_model({
+                    'epoch': epoch + 1,
+                    'arch': args.arch,
+                    'state_dict': model.state_dict(),
+                    'best_acc1': best_acc1,
+                    'optimizer' : optimizer.state_dict(),
+                    }, MODEL_PATH, epoch + 1)                
+            
+    writer.close()  # close tensorboardX writer
 
-
+    
 def train(train_loader, model, criterion, optimizer, epoch, args):
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
@@ -321,6 +343,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         # measure data loading time
         data_time.update(time.time() - end)
 
+        # blur images
+        if epoch < 30:
+            images = GaussianBlurAll(images, tuple(args.kernel_size), args.sigma)
+        
         if args.gpu is not None:
             images = images.cuda(args.gpu, non_blocking=True)
         target = target.cuda(args.gpu, non_blocking=True)
@@ -342,11 +368,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
 
         
         # measure elapsed time
-        ## ここを省略すれば、少しは早くなるかも
         batch_time.update(time.time() - end)
         end = time.time()
         
-        ## ここを省略すれば、少しは早くなるかも
         if i % args.print_freq == 0:
             progress.display(i)
             
@@ -370,6 +394,8 @@ def validate(val_loader, model, criterion, args):
     with torch.no_grad():
         end = time.time()
         for i, (images, target) in enumerate(val_loader):
+            # blur images
+            # images = GaussianBlurAll(images, tuple(args.kernel_size), args.sigma)
             if args.gpu is not None:
                 images = images.cuda(args.gpu, non_blocking=True)
             target = target.cuda(args.gpu, non_blocking=True)
@@ -388,23 +414,21 @@ def validate(val_loader, model, criterion, args):
             batch_time.update(time.time() - end)
             end = time.time()
             
-            ## ここを省略すれば、少しは早くなるかも
             if i % args.print_freq == 0:
                 progress.display(i)
 
         # TODO: this should also be done with the ProgressMeter
-        ## ここを省略すれば、少しは早くなるかも
         print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'
               .format(top1=top1, top5=top5))
 
     return losses.avg, top1.avg, top5.avg
 
         
-"""
+
 if __name__ == '__main__':
-    # run_time = time.time()
+    run_time = time.time()
     main()
-    # mins = (time.time() - run_time) / 60
-    # hours = mins / 60
-    # print("Run time: {:.4f}mins, {:.4f}hours".format(mins, hours)) 
+    mins = (time.time() - run_time) / 60
+    hours = mins / 60
+    print("Total run time: {:.4f}mins, {:.4f}hours".format(mins, hours)) 
 

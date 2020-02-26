@@ -7,7 +7,7 @@ import numpy as np
 import cv2
 
 
-def GaussianBlur_images(imgs, kernel_size, sigma):
+def GaussianBlurAll(imgs, kernel_size, sigma):
     npimgs = imgs.numpy()
     imgs_list = []
     for img in npimgs:
