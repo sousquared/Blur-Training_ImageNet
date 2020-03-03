@@ -83,6 +83,8 @@ parser.add_argument('--exp-name', '-n', type=str, default='',
                     help='Experiment name.')
 parser.add_argument('--mode', type=str, choices=['normal', 'blur-all', 'blur-half', 'blur-step', 'blur-half-data'],
                     help='Training mode.')
+parser.add_argument('--blur-val', action='store_true', default=False,
+                    help='Blur validation data.')
 parser.add_argument('--kernel-size', '-k', type=int, nargs=2, default=(3,3),
                     help='Kernel size of Gaussian Blur.')
 parser.add_argument('--sigma', '-s', type=float, default=1,
@@ -138,7 +140,10 @@ def main():
     elif args.mode == 'blur-all':
         print('Sigma: {}'.format(args.sigma))
         print('Kernel-size: {}'.format(tuple(args.kernel_size)))  # radius = sigma * 3 * 2 + 1
-    print('Random seed: {}'.format(args.seed))
+    if args.blur_val:
+        print('VALIDATION MODE: blur-val')
+    if args.seed is not None:
+        print('Random seed: {}'.format(args.seed))
     print('Epochs: {}'.format(args.epochs))
     print('Learning rate: {}'.format(args.lr))
     print('Weight_decay: {}'.format(args.weight_decay))
@@ -449,7 +454,8 @@ def validate(val_loader, model, criterion, args):
         end = time.time()
         for i, (images, target) in enumerate(val_loader):
             # blur images
-            # images = GaussianBlurAll(images, tuple(args.kernel_size), args.sigma)
+            if args.blur_val:
+                images = GaussianBlurAll(images, tuple(args.kernel_size), args.sigma)
             if args.gpu is not None:
                 images = images.cuda(args.gpu, non_blocking=True)
             target = target.cuda(args.gpu, non_blocking=True)
