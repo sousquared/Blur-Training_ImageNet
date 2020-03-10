@@ -124,36 +124,6 @@ def main():
         warnings.warn('You have chosen a specific GPU. This will completely '
                       'disable data parallelism.')
     
-    # print settings
-    print('='*5 + ' settings ' + '='*5)
-    print('TRAINING MODE: {}'.format(args.mode))
-    if args.mode == 'blur-step':
-        print('### BLUR CHANGING STEPS ###')
-        print('Step: 1-10 -> 11-20 -> 21-30 -> 31-40 -> 41-{}'.format(args.epochs))
-        print('Sigma: 4 -> 3 -> 2 -> 1 -> none')
-        print('Kernel-size: (25, 25) -> (19, 19) -> (13, 13) -> (7, 7) -> none')
-        print('#'*20)
-    elif args.mode == 'blur-half':
-        print('### NO BLUR FROM EPOCH {:d} ###'.format(args.epochs // 2))
-        print('Sigma: {}'.format(args.sigma))
-        print('Kernel-size: {}'.format(tuple(args.kernel_size)))  # radius = sigma * 3 * 2 + 1
-    elif args.mode == 'blur-all':
-        print('Sigma: {}'.format(args.sigma))
-        print('Kernel-size: {}'.format(tuple(args.kernel_size)))  # radius = sigma * 3 * 2 + 1
-    if args.blur_val:
-        print('VALIDATION MODE: blur-val')
-    if args.seed is not None:
-        print('Random seed: {}'.format(args.seed))
-    print('Epochs: {}'.format(args.epochs))
-    print('Learning rate: {}'.format(args.lr))
-    print('Weight_decay: {}'.format(args.weight_decay))
-    print()
-    print(model)
-    print('='*20)
-    print()
-    
-    torch.backends.cudnn.benchmark=True  # for fast training
-
     if args.dist_url == "env://" and args.world_size == -1:
         args.world_size = int(os.environ["WORLD_SIZE"])
 
@@ -253,10 +223,34 @@ def main_worker(gpu, ngpus_per_node, args):
                   .format(args.resume, checkpoint['epoch']))
         else:
             print("=> no checkpoint found at '{}'".format(args.resume))
-    else:
-        print('initial learning: {}'.format(args.lr))
+        
+    # print settings
+    print('='*5 + ' settings ' + '='*5)
+    print('TRAINING MODE: {}'.format(args.mode))
+    if args.mode == 'blur-step':
+        print('### BLUR CHANGING STEPS ###')
+        print('Step: 1-10 -> 11-20 -> 21-30 -> 31-40 -> 41-{}'.format(args.epochs))
+        print('Sigma: 4 -> 3 -> 2 -> 1 -> none')
+        # print('Kernel-size: (25, 25) -> (19, 19) -> (13, 13) -> (7, 7) -> none')
+        print('#'*20)
+    elif args.mode == 'blur-half':
+        print('### NO BLUR FROM EPOCH {:d} ###'.format(args.epochs // 2))
+        print('Sigma: {}'.format(args.sigma))
+        # print('Kernel-size: {}'.format(tuple(args.kernel_size)))  # radius = sigma * 3 * 2 + 1
+    elif args.mode == 'blur-all':
+        print('Sigma: {}'.format(args.sigma))
+        # print('Kernel-size: {}'.format(tuple(args.kernel_size)))  # radius = sigma * 3 * 2 + 1
+    if args.blur_val:
+        print('VALIDATION MODE: blur-val')
+    if args.seed is not None:
+        print('Random seed: {}'.format(args.seed))
+    print('Epochs: {}'.format(args.epochs))
+    print('(Initial) Learning rate: {} (It can be changed by adjust_learning_rate())'.format(args.lr))
+    print('Weight_decay: {}'.format(args.weight_decay))
+    print('='*20)
+    print()
 
-    cudnn.benchmark = True
+    cudnn.benchmark = True  # for fast run
 
     # Data loading code
     traindir = os.path.join(args.data, 'train')
@@ -372,25 +366,25 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
     blur = True
     if args.mode == 'normal':
             blur = False
-        elif args.mode == 'blur-step':
-            ### BLUR-STEP SETTINGS ###
-            if epoch < 10:
-                args.sigma = 4
-                args.kernel_size = (25, 25)  # radius = sigma * 3 * 2 + 1
-            elif epoch < 20:
-                args.sigma = 3
-                args.kernel_size = (19, 19)
-            elif epoch < 30:
-                args.sigma = 2
-                args.kernel_size = (13, 13)
-            elif epoch < 40:
-                args.sigma = 1
-                args.kernel_size = (7, 7)
-            else:
-                blur = False
-        elif args.mode == 'blur-half':
-            if epoch >= args.epochs // 2:
-                blur = False
+    elif args.mode == 'blur-step':
+        ### BLUR-STEP SETTINGS ###
+        if epoch < 10:
+            args.sigma = 4
+            # args.kernel_size = (25, 25)  # radius = sigma * 3 * 2 + 1
+        elif epoch < 20:
+            args.sigma = 3
+            # args.kernel_size = (19, 19)
+        elif epoch < 30:
+            args.sigma = 2
+            # args.kernel_size = (13, 13)
+        elif epoch < 40:
+            args.sigma = 1
+            # args.kernel_size = (7, 7)
+        else:
+            blur = False
+    elif args.mode == 'blur-half':
+        if epoch >= args.epochs // 2:
+            blur = False
 
     end = time.time()
     for i, (images, target) in enumerate(train_loader):
@@ -402,10 +396,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
             if args.mode == 'blur-half-data':
                     half1, half2 = images.chunk(2)
                     # blur first half images
-                    half1 = GaussianBlurAll(half1, tuple(args.kernel_size), args.sigma)
+                    half1 = GaussianBlurAll(half1, (0,0), args.sigma)
                     images = torch.cat((half1, half2))
             else:
-                images = GaussianBlurAll(images, tuple(args.kernel_size), args.sigma)  
+                images = GaussianBlurAll(images, (0,0), args.sigma)  
             
         if args.gpu is not None:
             images = images.cuda(args.gpu, non_blocking=True)
@@ -455,7 +449,7 @@ def validate(val_loader, model, criterion, args):
         for i, (images, target) in enumerate(val_loader):
             # blur images
             if args.blur_val:
-                images = GaussianBlurAll(images, tuple(args.kernel_size), args.sigma)
+                images = GaussianBlurAll(images, (0,0), args.sigma)
             if args.gpu is not None:
                 images = images.cuda(args.gpu, non_blocking=True)
             target = target.cuda(args.gpu, non_blocking=True)
