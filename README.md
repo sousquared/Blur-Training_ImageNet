@@ -12,6 +12,7 @@ Or pull and run [docker image][docker-blurnet] (e.g. blurnet:1.0) I made for thi
 
 
 ## run examples
+<<<<<<< HEAD
 General usage example:
 ```bash
 $ cd ./blurnet
