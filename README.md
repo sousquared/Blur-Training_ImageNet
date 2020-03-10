@@ -18,6 +18,8 @@ Or pull and run [docker image][docker-blurnet] (e.g. blurnet:1.0) I made for thi
 
 `python -u main.py -a alexnet --seed 42 --lr 0.01 --mode blur-half -s 3 -k 19 19 --epochs 60 -b 512 -n blur-half_s3_k19-19_b512 /mnt/data/ImageNet/ILSVRC2012/`
 
+`python -u main.py -a alexnet --seed 42 --lr 0.01 --mode blur-half-data -s 3 --epochs 60 -b 512 -n blur-half-data_s3_b512 /mnt/data/ImageNet/ILSVRC2012/`
+
 `python -u main.py -a alexnet --seed 42 --lr 0.01 --mode blur-step --epochs 60 -b 512 -n blur-step_b512 /mnt/data/ImageNet/ILSVRC2012/`
 
 
