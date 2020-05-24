@@ -64,7 +64,7 @@ $ python -u main.py --mode blur-half-data --blur-val -a alexnet --seed 42 --lr 0
 ```
 
 - `--resume [PATH TO SAVED MODEL]`   
-This option trains Normal alexnetCifar10 from your saved model.  
+This option trains your saved model starting from the latest epoch.  
 usage example:  
 ```bash
 $ python -u main.py --mode blur-half-data -a alexnet --seed 42 --lr 0.01 -s 3 --epochs 60 -b 512 --resume ../logs/models/blur-half-data_s1/model_060.pth.tar -n blur-half-data_s3_from60e /mnt/data/ImageNet/ILSVRC2012/
