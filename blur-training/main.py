@@ -237,7 +237,7 @@ def main_worker(gpu, ngpus_per_node, args):
         print('### NO BLUR FROM EPOCH {:d} ###'.format(args.epochs // 2))
         print('Sigma: {}'.format(args.sigma))
         # print('Kernel-size: {}'.format(tuple(args.kernel_size)))  # radius = sigma * 3 * 2 + 1
-    elif args.mode == 'blur-all':
+    elif args.mode != 'normal':
         print('Sigma: {}'.format(args.sigma))
         # print('Kernel-size: {}'.format(tuple(args.kernel_size)))  # radius = sigma * 3 * 2 + 1
     if args.blur_val:
