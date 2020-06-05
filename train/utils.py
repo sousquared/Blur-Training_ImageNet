@@ -65,7 +65,7 @@ def save_checkpoint(state, is_best, param_path, epoch):
         shutil.copyfile(filename, param_path+'model_best.pth.tar')
         
 def save_model(state, param_path, epoch):
-    filename=param_path+'model_{:03d}.pth.tar'.format(epoch)
+    filename=param_path+'epoch_{}.pth.tar'.format(epoch)
     torch.save(state, filename)
         
 def adjust_learning_rate(optimizer, epoch, args):
