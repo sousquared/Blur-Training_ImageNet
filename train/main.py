@@ -332,7 +332,7 @@ def main_worker(gpu, ngpus_per_node, args):
             save_checkpoint({
                 'epoch': epoch + 1,
                 'arch': args.arch,
-                'state_dict': model.module.state_dict(),  # remove Dataparallel
+                'state_dict': model.state_dict(),  
                 'best_acc1': best_acc1,
                 'optimizer' : optimizer.state_dict(),
                 }, is_best, MODEL_PATH, epoch + 1)
@@ -340,7 +340,7 @@ def main_worker(gpu, ngpus_per_node, args):
                 save_model({
                     'epoch': epoch + 1,
                     'arch': args.arch,
-                    'state_dict': model.module.state_dict(),  # remove Dataparallel
+                    'state_dict': model.state_dict(),  
                     'best_acc1': best_acc1,
                     'optimizer' : optimizer.state_dict(),
                     }, MODEL_PATH, epoch + 1)                
