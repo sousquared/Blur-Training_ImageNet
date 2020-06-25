@@ -76,5 +76,5 @@ Training scripts and functions are strongly rely on [pytorch tutorial][pytorch-t
 
 
 [pytorch-tutorial]:https://github.com/pytorch/tutorials/blob/master/beginner_source/blitz/cifar10_tutorial.py
-[pytorch-imagenet]:https://github.com/pytorch/examples/blob/master/imagenet/main.py
+[pytorch-imagenet]:https://github.com/pytorch/examples/blob/master/imagenet
 [docker-blur-training]:https://hub.docker.com/r/sousquared/blur-training
