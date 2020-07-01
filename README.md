@@ -8,13 +8,13 @@ Install Python Packages
 ```bash
 $ pip install -r requirements.txt
 ```
-Or pull and run [docker image][docker-blur-training] (e.g. blur-training:1.0) I made for this experiments.  
+Or pull and run [docker image][docker-blur-training] (e.g. blur-training:latest) I made for this experiments.  
 
 
 ## run examples
 General usage example:
 ```bash
-$ cd ./blur-training
+$ cd ./training
 $ python main.py --mode [TRAINING MODE] -n [EXPERIMENT NAME] [IMAGENET_PATH]
 ```  
 
