@@ -22,7 +22,7 @@ Then the experiment's name is used for managing results under `logs/` directory.
 You can choose the training mode from {normal,blur-all,blur-half-epochs,blur-step,blur-half-data} by using `--mode [TRAINING MODE]` option.
 
 - **normal**  
-This mode trains Normal alexnetCifar10.  
+This mode trains Normal AlexNet.  
 usage example:  
 ```bash
 $ python -u main.py --mode normal -a alexnet -b 256 --lr 0.01 --seed 42 --epochs 60 -n normal_60e_init-lr0.01_seed42 /mnt/data/ImageNet/ILSVRC2012/ &
