@@ -1,8 +1,5 @@
 # Blur-Training with ImageNet 
 
-`logs/` will automaticaly be created.
-
-
 ## Preparation
 - Install Python Packages  
 ```bash
@@ -19,7 +16,9 @@ $ cd ./training
 $ python main.py --mode [TRAINING MODE] -n [EXPERIMENT NAME] [IMAGENET_PATH]
 ```  
 
-For `main.py`, you need to use `--exp-name` or `-n` option to define your experiment's name. Then the experiment's name is used for managing results under `logs/` directory.   
+For `main.py`, you need to use `--exp-name` or `-n` option to define your experiment's name. 
+Then the experiment's name is used for managing results under `logs/` directory.
+`logs/` will automatically be created when you run `main.py`.   
 You can choose the training mode from {normal,blur-all,blur-half-epochs,blur-step,blur-half-data} by using `--mode [TRAINING MODE]` option.
 
 - **normal**  
