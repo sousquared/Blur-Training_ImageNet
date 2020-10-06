@@ -4,13 +4,14 @@
 
 
 ## Preparation
-Install Python Packages  
+- Install Python Packages  
 ```bash
 $ pip install -r requirements.txt
 ```
 Or pull and run [docker image][docker-blur-training] (e.g. blur-training:latest) I made for this experiments.  
-
-
+- Download the ImageNet dataset from http://www.image-net.org/
+    - Note that the ImageNet images need to be put in two subdirectories, ``train/`` and ``val/``.
+    
 ## run examples
 General usage example:
 ```bash
