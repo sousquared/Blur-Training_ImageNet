@@ -22,13 +22,19 @@ from torch.utils.tensorboard import SummaryWriter
 
 from utils import *
 
+
+###################################################################
+# TO DO: set path to ImageNet
+# This directory needs to have 'train' and 'val' subdirectories.
+IMAGENET_PATH = 'path/to/ImageNet/'
+###################################################################
+
+
 model_names = sorted(name for name in models.__dict__
                      if name.islower() and not name.startswith("__")
                      and callable(models.__dict__[name]))
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
-parser.add_argument('data', metavar='DIR',
-                    help='path to dataset')
 parser.add_argument('-a', '--arch', metavar='ARCH', default='alexnet',
                     choices=model_names,
                     help='model architecture: ' +
@@ -107,14 +113,14 @@ def main():
     os.makedirs('../logs/models/{}'.format(args.exp_name), exist_ok=True)
     os.makedirs('../logs/tb', exist_ok=True)
 
-    OUTPUT_PATH = '../logs/outputs/{}.log'.format(args.exp_name)
-    if os.path.exists(OUTPUT_PATH):
+    outputs_path = '../logs/outputs/{}.log'.format(args.exp_name)
+    if os.path.exists(outputs_path):
         print('ERROR: This experiment name is already used. \
                 Use another name for this experiment by \'--exp-name\'')
         sys.exit()
     # recording outputs
-    sys.stdout = open(OUTPUT_PATH, 'w')
-    sys.stderr = open(OUTPUT_PATH, 'a')
+    sys.stdout = open(outputs_path, 'w')
+    sys.stderr = open(outputs_path, 'a')
 
     if args.seed is not None:
         random.seed(args.seed)
@@ -237,8 +243,8 @@ def main_worker(gpu, ngpus_per_node, args):
     cudnn.benchmark = True  # for fast run
 
     # Data loading code
-    traindir = os.path.join(args.data, 'train')
-    valdir = os.path.join(args.data, 'val')
+    traindir = os.path.join(IMAGENET_PATH, 'train')
+    valdir = os.path.join(IMAGENET_PATH, 'val')
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
 
@@ -275,10 +281,10 @@ def main_worker(gpu, ngpus_per_node, args):
         return
 
     # recording settings
-    MODEL_PATH = '../logs/models/{}/'.format(args.exp_name)
-    TB_PATH = '../logs/tb/{}'.format(args.exp_name)  # TB: tensorboard
+    models_path = '../logs/models/{}/'.format(args.exp_name)
+    tb_path = '../logs/tb/{}'.format(args.exp_name)  # TB: tensorboard
     # tensorboardX
-    writer = SummaryWriter(log_dir=TB_PATH)
+    writer = SummaryWriter(log_dir=tb_path)
 
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
@@ -317,7 +323,7 @@ def main_worker(gpu, ngpus_per_node, args):
                 'state_dict': model.state_dict(),
                 'best_acc1': best_acc1,
                 'optimizer': optimizer.state_dict(),
-            }, is_best, MODEL_PATH, epoch + 1)
+            }, is_best, models_path, epoch + 1)
             if (epoch + 1) % 10 == 0:  # save model every 10 epochs
                 save_model({
                     'epoch': epoch + 1,
@@ -325,7 +331,7 @@ def main_worker(gpu, ngpus_per_node, args):
                     'state_dict': model.state_dict(),
                     'best_acc1': best_acc1,
                     'optimizer': optimizer.state_dict(),
-                }, MODEL_PATH, epoch + 1)
+                }, models_path, epoch + 1)
 
     writer.close()  # close tensorboardX writer
 
