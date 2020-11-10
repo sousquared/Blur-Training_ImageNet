@@ -150,7 +150,7 @@ def print_settings(model, args):
         print('VALIDATION MODE: blur-val')
     print('Batch size: {}'.format(args.batch_size))
     print('Epochs: {}'.format(args.epochs))
-    print('Learning rate: {}'.format(args.lr))
+    print('Initial Learning rate: {} (It will be decayed by 10 every 20 epochs)'.format(args.lr))
     print('Weight_decay: {}'.format(args.weight_decay))
     print()
     print(model)
