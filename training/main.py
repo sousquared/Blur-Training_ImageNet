@@ -22,22 +22,21 @@ from torch.utils.tensorboard import SummaryWriter
 
 from utils import *
 
-
 model_names = sorted(name for name in models.__dict__
-    if name.islower() and not name.startswith("__")
-    and callable(models.__dict__[name]))
+                     if name.islower() and not name.startswith("__")
+                     and callable(models.__dict__[name]))
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('data', metavar='DIR',
                     help='path to dataset')
-parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet18',
+parser.add_argument('-a', '--arch', metavar='ARCH', default='alexnet',
                     choices=model_names,
                     help='model architecture: ' +
-                        ' | '.join(model_names) +
-                        ' (default: resnet18)')
+                         ' | '.join(model_names) +
+                         ' (default: alexnet)')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=90, type=int, metavar='N',
+parser.add_argument('--epochs', default=60, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
@@ -46,15 +45,15 @@ parser.add_argument('-b', '--batch-size', default=256, type=int,
                     help='mini-batch size (default: 256), this is the total '
                          'batch size of all GPUs on the current node when '
                          'using Data Parallel or Distributed Data Parallel')
-parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
+parser.add_argument('--lr', '--learning-rate', default=0.01, type=float,
                     metavar='LR', help='initial learning rate', dest='lr')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--wd', '--weight-decay', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)',
                     dest='weight_decay')
-parser.add_argument('-p', '--print-freq', default=10, type=int,
-                    metavar='N', help='print frequency (default: 10)')
+parser.add_argument('-p', '--print-freq', default=100, type=int,
+                    metavar='N', help='print frequency (default: 100)')
 parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
@@ -78,32 +77,40 @@ parser.add_argument('--multiprocessing-distributed', action='store_true',
                          'N processes per node, which has N GPUs. This is the '
                          'fastest way to use PyTorch for either single node or '
                          'multi node data parallel training')
-### BlurNet additional arguments
+### Blur-Training additional arguments
 parser.add_argument('--exp-name', '-n', type=str, default='',
                     help='Experiment name.')
-parser.add_argument('--mode', type=str, choices=['normal', 'blur-all', 'blur-half-epochs', 'blur-step', 'blur-half-data'],
+parser.add_argument('--mode', type=str,
+                    choices=['normal', 'all', 'mix',
+                             'single-step', 'reversed-single-step',
+                             'multi-steps', 'multi-steps-cbt'],
                     help='Training mode.')
 parser.add_argument('--blur-val', action='store_true', default=False,
                     help='Blur validation data.')
-parser.add_argument('--kernel-size', '-k', type=int, nargs=2, default=(3,3),
+parser.add_argument('--kernel-size', '-k', type=int, nargs=2, default=(3, 3),
                     help='Kernel size of Gaussian Blur.')
 parser.add_argument('--sigma', '-s', type=float, default=1,
                     help='Sigma of Gaussian Blur.')
+parser.add_argument('--init-sigma', type=float, default=2,
+                    help='Initial Sigma of Gaussian Blur. (multi-steps-cbt)')
+parser.add_argument('--cbt-rate', type=float, default=0.9,
+                    help='Blur decay rate (multi-steps-cbt)')
 
 best_acc1 = 0
 
 
 def main():
     args = parser.parse_args()
-    
+
     # directories settings
     os.makedirs('../logs/outputs', exist_ok=True)
     os.makedirs('../logs/models/{}'.format(args.exp_name), exist_ok=True)
     os.makedirs('../logs/tb', exist_ok=True)
-    
+
     OUTPUT_PATH = '../logs/outputs/{}.log'.format(args.exp_name)
     if os.path.exists(OUTPUT_PATH):
-        print('ERROR: This experiment name is already used. Use another name for this experiment by \'--exp-name\'')
+        print('ERROR: This experiment name is already used. \
+                Use another name for this experiment by \'--exp-name\'')
         sys.exit()
     # recording outputs
     sys.stdout = open(OUTPUT_PATH, 'w')
@@ -118,12 +125,12 @@ def main():
                       'which can slow down your training considerably! '
                       'You may see unexpected behavior when restarting '
                       'from checkpoints.')
-        print('seed: {}'.format(args.seed))
+        print('random seed: {}'.format(args.seed))
 
     if args.gpu is not None:
         warnings.warn('You have chosen a specific GPU. This will completely '
                       'disable data parallelism.')
-    
+
     if args.dist_url == "env://" and args.world_size == -1:
         args.world_size = int(os.environ["WORLD_SIZE"])
 
@@ -223,32 +230,9 @@ def main_worker(gpu, ngpus_per_node, args):
                   .format(args.resume, checkpoint['epoch']))
         else:
             print("=> no checkpoint found at '{}'".format(args.resume))
-        
+
     # print settings
-    print('='*5 + ' settings ' + '='*5)
-    print('TRAINING MODE: {}'.format(args.mode))
-    if args.mode == 'blur-step':
-        print('### BLUR CHANGING STEPS ###')
-        print('Step: 1-10 -> 11-20 -> 21-30 -> 31-40 -> 41-{}'.format(args.epochs))
-        print('Sigma: 4 -> 3 -> 2 -> 1 -> none')
-        # print('Kernel-size: (25, 25) -> (19, 19) -> (13, 13) -> (7, 7) -> none')
-        print('#'*20)
-    elif args.mode == 'blur-half-epochs':
-        print('### NO BLUR FROM EPOCH {:d} ###'.format(args.epochs // 2))
-        print('Sigma: {}'.format(args.sigma))
-        # print('Kernel-size: {}'.format(tuple(args.kernel_size)))  # radius = sigma * 3 * 2 + 1
-    elif args.mode != 'normal':
-        print('Sigma: {}'.format(args.sigma))
-        # print('Kernel-size: {}'.format(tuple(args.kernel_size)))  # radius = sigma * 3 * 2 + 1
-    if args.blur_val:
-        print('VALIDATION MODE: blur-val')
-    if args.seed is not None:
-        print('Random seed: {}'.format(args.seed))
-    print('Epochs: {}'.format(args.epochs))
-    print('(Initial) Learning rate: {} (It can be changed by adjust_learning_rate())'.format(args.lr))
-    print('Weight_decay: {}'.format(args.weight_decay))
-    print('='*20)
-    print()
+    print_settings(model, args)
 
     cudnn.benchmark = True  # for fast run
 
@@ -285,23 +269,21 @@ def main_worker(gpu, ngpus_per_node, args):
         ])),
         batch_size=args.batch_size, shuffle=False,
         num_workers=args.workers, pin_memory=True)
-    
-    print('batch size: {}'.format(args.batch_size))
 
     if args.evaluate:
         validate(val_loader, model, criterion, args)
         return
-    
+
     # recording settings
     MODEL_PATH = '../logs/models/{}/'.format(args.exp_name)
-    TB_PATH = '../logs/tb/{}'.format(args.exp_name)
+    TB_PATH = '../logs/tb/{}'.format(args.exp_name)  # TB: tensorboard
     # tensorboardX
     writer = SummaryWriter(log_dir=TB_PATH)
 
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             train_sampler.set_epoch(epoch)
-        # adjust_learning_rate(optimizer, epoch, args)
+        adjust_learning_rate(optimizer, epoch, args)  # decay by 10 every 20 epoch
 
         # train for one epoch
         train_time = time.time()
@@ -309,9 +291,9 @@ def main_worker(gpu, ngpus_per_node, args):
         mins = (time.time() - train_time) / 60
         print("Training time: {:.4f}mins".format(mins))
         # record the values in tensorboard
-        writer.add_scalar('loss/train', loss, epoch + 1)  # avarage loss
-        writer.add_scalar('acc1/train', acc1, epoch + 1)  # avarage acc@1
-        writer.add_scalar('acc5/train', acc5, epoch + 1)  # avarage acc@5
+        writer.add_scalar('loss/train', loss, epoch + 1)  # average loss
+        writer.add_scalar('acc1/train', acc1, epoch + 1)  # average acc@1
+        writer.add_scalar('acc5/train', acc5, epoch + 1)  # average acc@5
 
         # evaluate on validation set
         val_time = time.time()
@@ -328,26 +310,26 @@ def main_worker(gpu, ngpus_per_node, args):
         best_acc1 = max(acc1, best_acc1)
 
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed
-                and args.rank % ngpus_per_node == 0):
+                                                    and args.rank % ngpus_per_node == 0):
             save_checkpoint({
                 'epoch': epoch + 1,
                 'arch': args.arch,
-                'state_dict': model.state_dict(),  
+                'state_dict': model.state_dict(),
                 'best_acc1': best_acc1,
-                'optimizer' : optimizer.state_dict(),
-                }, is_best, MODEL_PATH, epoch + 1)
+                'optimizer': optimizer.state_dict(),
+            }, is_best, MODEL_PATH, epoch + 1)
             if (epoch + 1) % 10 == 0:  # save model every 10 epochs
                 save_model({
                     'epoch': epoch + 1,
                     'arch': args.arch,
-                    'state_dict': model.state_dict(),  
+                    'state_dict': model.state_dict(),
                     'best_acc1': best_acc1,
-                    'optimizer' : optimizer.state_dict(),
-                    }, MODEL_PATH, epoch + 1)                
-            
+                    'optimizer': optimizer.state_dict(),
+                }, MODEL_PATH, epoch + 1)
+
     writer.close()  # close tensorboardX writer
 
-    
+
 def train(train_loader, model, criterion, optimizer, epoch, args):
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
@@ -361,30 +343,20 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
 
     # switch to train mode
     model.train()
-    
+
     # blur settings
-    blur = True
     if args.mode == 'normal':
-            blur = False
-    elif args.mode == 'blur-step':
-        ### BLUR-STEP SETTINGS ###
-        if epoch < 10:
-            args.sigma = 4
-            # args.kernel_size = (25, 25)  # radius = sigma * 3 * 2 + 1
-        elif epoch < 20:
-            args.sigma = 3
-            # args.kernel_size = (19, 19)
-        elif epoch < 30:
-            args.sigma = 2
-            # args.kernel_size = (13, 13)
-        elif epoch < 40:
-            args.sigma = 1
-            # args.kernel_size = (7, 7)
-        else:
-            blur = False
-    elif args.mode == 'blur-half-epochs':
+        args.sigma = 0  # no blur
+    elif args.mode == 'multi-steps-cbt':
+        args.sigma = adjust_multi_steps_cbt(args.init_sigma, epoch, args.cbt_rate, every=5)  # sigma decay every 5 epoch
+    elif args.mode == 'multi-steps':
+        args.sigma = adjust_multi_steps(epoch)
+    elif args.mode == 'single-step':
         if epoch >= args.epochs // 2:
-            blur = False
+            args.sigma = 0
+    elif args.mode == 'reversed-single-step':
+        if epoch < args.epochs // 2:
+            args.sigma = 0
 
     end = time.time()
     for i, (images, target) in enumerate(train_loader):
@@ -392,20 +364,20 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         data_time.update(time.time() - end)
 
         # blur images
-        if blur:
-            if args.mode == 'blur-half-data':
-                    half1, half2 = images.chunk(2)
-                    # blur first half images
-                    half1 = GaussianBlurAll(half1, (0,0), args.sigma)
-                    images = torch.cat((half1, half2))
+        if args.sigma != 0:  # skip if sigma = 0 (no blur)
+            if args.mode == 'mix':
+                half1, half2 = images.chunk(2)
+                # blur first half images
+                half1 = GaussianBlurAll(half1, (0, 0), args.sigma)
+                images = torch.cat((half1, half2))
             else:
-                images = GaussianBlurAll(images, (0,0), args.sigma)  
-            
+                images = GaussianBlurAll(images, (0, 0), args.sigma)
+
         if args.gpu is not None:
             images = images.cuda(args.gpu, non_blocking=True)
         target = target.cuda(args.gpu, non_blocking=True)
 
-        # compute output
+        # compute outputs
         output = model(images)
         loss = criterion(output, target)
 
@@ -423,12 +395,11 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
-        
+
         if i % args.print_freq == 0:
             progress.display(i)
-            
+
     return losses.avg, top1.avg, top5.avg
-         
 
 
 def validate(val_loader, model, criterion, args):
@@ -443,13 +414,12 @@ def validate(val_loader, model, criterion, args):
 
     # switch to evaluate mode
     model.eval()
-
     with torch.no_grad():
         end = time.time()
         for i, (images, target) in enumerate(val_loader):
             # blur images
             if args.blur_val:
-                images = GaussianBlurAll(images, (0,0), args.sigma)
+                images = GaussianBlurAll(images, (0, 0), args.sigma)
             if args.gpu is not None:
                 images = images.cuda(args.gpu, non_blocking=True)
             target = target.cuda(args.gpu, non_blocking=True)
@@ -467,21 +437,19 @@ def validate(val_loader, model, criterion, args):
             # measure elapsed time
             batch_time.update(time.time() - end)
             end = time.time()
-            
+
             if i % args.print_freq == 0:
                 progress.display(i)
 
-        # TODO: this should also be done with the ProgressMeter
         print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'
               .format(top1=top1, top5=top5))
 
     return losses.avg, top1.avg, top5.avg
 
-        
 
 if __name__ == '__main__':
     run_time = time.time()
     main()
     mins = (time.time() - run_time) / 60
     hours = mins / 60
-    print("Total run time: {:.4f}mins, {:.4f}hours".format(mins, hours)) 
+    print("Total run time: {:.4f}mins, {:.4f}hours".format(mins, hours))
