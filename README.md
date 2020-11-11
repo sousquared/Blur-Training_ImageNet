@@ -87,7 +87,7 @@ $ python -u main.py --arch alexnet --mode mix -s 4 --resume ../logs/models/alexn
 ```
 
 ## citation
-Training scripts and functions are strongly rely on [pytorch tutorial][pytorch-tutorial] and [pytorch imagenet trainning example][pytorch-imagenet].
+Training scripts and functions are babsed on [pytorch tutorial][pytorch-tutorial] and [pytorch imagenet trainning example][pytorch-imagenet].
 
 
 
