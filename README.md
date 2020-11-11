@@ -27,7 +27,7 @@ If not, Download the ImageNet dataset from http://www.image-net.org/
 General usage example:
 ```bash
 $ cd training
-$ python -u main.py --arch [ARCHITECTURE NAME] --mode [TRAINING MODE] -n [EXPERIMENT NAME] 
+$ python main.py --arch [ARCHITECTURE NAME] --mode [TRAINING MODE] -n [EXPERIMENT NAME] 
 ```  
 
 For `main.py`, you need to use `--exp-name` or `-n` option to define your experiment's name. 
@@ -41,49 +41,49 @@ by using `--mode [TRAINING MODE]` option.
 This mode trains Normal model (default: AlexNet).  
 usage example:  
 ```bash
-$ python -u main.py --arch alexnet --mode normal -e 60 -b 64 --lr 0.01 -n alexnet_normal
+$ python main.py --arch alexnet --mode normal -e 60 -b 64 --lr 0.01 -n alexnet_normal
 ```
 
 - **all**  
 This mode blurs ALL images in the training mode.  
 usage example:  
 ```bash
-$ python -u main.py --arch alexnet --mode all -s1 -n alexnet_all_s1
+$ python main.py --arch alexnet --mode all -s1 -n alexnet_all_s1
 ```
 
 - **mix**    
 This mode blurs half training data.
 usage example:  
 ```bash
-$ python -u main.py --arch alexnet --mode mix -s 1 -n alexnet_mix_s1
+$ python main.py --arch alexnet --mode mix -s 1 -n alexnet_mix_s1
 ```
 
 - **single-step**    
 This mode blurs first half epochs (e.g. first 30 epochs in 60 entire epochs) in the training.
 usage example:  
 ```bash
-$ python -u main.py --arch alexnet --mode single-step -s 1 -n alexnet_single-step_s1
+$ python main.py --arch alexnet --mode single-step -s 1 -n alexnet_single-step_s1
 ```
 
 - **multi-steps**  
 This mode blurs images step by step (e.g. every 10 epochs).  
 usage example:  
 ```bash
-$ python -u main.py --arch alexnet --mode multi-steps -n alexnet_multi-steps
+$ python main.py --arch alexnet --mode multi-steps -n alexnet_multi-steps
 ```
 
 - `--blur-val`   
 This option blurs validation data as well. 
 usage example:  
 ```bash
-$ python -u main.py --arch alexnet --mode mix -s 4 --blur-val -n alexnet_mix_lur-val_s4
+$ python main.py --arch alexnet --mode mix -s 4 --blur-val -n alexnet_mix_lur-val_s4
 ```
 
 - `--resume [PATH TO SAVED MODEL]`   
 This option trains your saved model starting from the latest epoch.  
 usage example:  
 ```bash
-$ python -u main.py --arch alexnet --mode mix -s 4 --resume ../logs/models/alexnet_mix_s4/model_060.pth.tar -n alexnet_mix_s4_from60e 
+$ python main.py --arch alexnet --mode mix -s 4 --resume ../logs/models/alexnet_mix_s4/model_060.pth.tar -n alexnet_mix_s4_from60e 
 ```
 
 ## citation
