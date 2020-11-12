@@ -133,7 +133,7 @@ def main_worker(args):
         print("=> creating model '{}'".format(args.arch))
         model = models.__dict__[args.arch]()
 
-
+    # set model on cuda
     if not torch.cuda.is_available():
         print('using CPU, this will be slow')
     elif args.gpu is not None:
