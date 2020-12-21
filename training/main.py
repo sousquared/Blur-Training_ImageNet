@@ -300,10 +300,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
             if args.mode == 'mix':
                 half1, half2 = images.chunk(2)
                 # blur first half images
-                half1 = GaussianBlurAll(half1, (0, 0), args.sigma)
+                half1 = GaussianBlurAll(half1, args.sigma)
                 images = torch.cat((half1, half2))
             else:
-                images = GaussianBlurAll(images, (0, 0), args.sigma)
+                images = GaussianBlurAll(images, args.sigma)
 
         if torch.cuda.is_available():
             images = images.cuda(args.gpu, non_blocking=True)
@@ -351,7 +351,7 @@ def validate(val_loader, model, criterion, args):
         for i, (images, target) in enumerate(val_loader):
             # blur images
             if args.blur_val:
-                images = GaussianBlurAll(images, (0, 0), args.sigma)
+                images = GaussianBlurAll(images, args.sigma)
             if torch.cuda.is_available():
                 images = images.cuda(args.gpu, non_blocking=True)
                 target = target.cuda(args.gpu, non_blocking=True)
