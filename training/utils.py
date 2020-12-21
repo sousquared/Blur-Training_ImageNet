@@ -6,21 +6,34 @@ import numpy as np
 import cv2
 
 
-def GaussianBlurAll(imgs, kernel_size, sigma):
-    npimgs = imgs.numpy()
-    imgs_list = []
-    for img in npimgs:
-        imgs_list.append(cv2.GaussianBlur(img.transpose(1, 2, 0), kernel_size, sigma))
-    blurred_imgs = np.array(imgs_list)
-    blurred_imgs = blurred_imgs.transpose(0, 3, 1, 2)
-    return torch.from_numpy(blurred_imgs)  # shape=(4, 3, 32, 32) in the pytorch tutorial setting
-
+def GaussianBlurAll(imgs, sigma, kernel_size=(0,0)) -> torch.Tensor:
+    """
+    Args:
+        imgs: Images (torch.Tensor)
+            size: (N, 3, 224, 224)
+        sigma: Standard deviation of Gaussian kernel.
+        kernel_size: This size will be automatically adjusted.
+    Returns: Blurred images (torch.Tensor)
+            size: (N, 3, 224, 224)
+    """
+    if sigma == 0:
+        return imgs  # do nothing
+    else:
+        imgs = imgs.numpy()
+        imgs_list = []
+        for img in imgs:
+             imgs_list.append(cv2.GaussianBlur(
+                 img.transpose(1, 2, 0), kernel_size, sigma))
+        imgs_list = np.array(imgs_list)
+        imgs_list = imgs_list.transpose(0, 3, 1, 2)
+        return torch.from_numpy(imgs_list)
+    
 
 def adjust_multi_steps(epoch: int):
     """For 'multi-steps' mode. Return sigma based on current epoch of training.
-    Arg:
+    Args:
         epoch: current epoch of training
-    Return: sigma
+    Returns: sigma
     """
     if epoch < 10:
         sigma = 4
