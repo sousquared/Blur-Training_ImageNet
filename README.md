@@ -43,7 +43,8 @@ usage example:
 ```bash
 $ python main.py --arch alexnet --mode normal -e 60 -b 64 --lr 0.01 -n alexnet_normal
 ```
-You can also spesify GPU by `--gpu`
+You can also specify GPU by `--gpu`.  
+**(You don't need it if you have only single GPU in your machine.)**
 ```bash
 $ python -u main.py --gpu 0 -a alexnet --mode normal -n alexnet_normal
 ```
@@ -69,11 +70,18 @@ usage example:
 $ python main.py --arch alexnet --mode single-step -s 1 -n alexnet_single-step_s1
 ```
 
+- **fixed-single-step**    
+This mode blurs first half epochs in the training, then fixes the weights of 1st Conv layer.
+usage example:  
+```bash
+python -u main.py -a alexnet --mode fixed-single-step -s 1 -n alexnet_fixed-single-step_s1
+```
+
 - **reversed-single-step**    
 This mode is reversed order of single-step (blurs second half epochs).
 usage example:  
 ```bash
-$ python -u main.py --gpu 3 -a alexnet --mode reversed-single-step --reverse-sigma 1 -n alexnet_reversed-single-step_s1
+$ python -u main.py -a alexnet --mode reversed-single-step --reverse-sigma 1 -n alexnet_reversed-single-step_s1
 ```
 
 - **multi-steps**  
@@ -99,6 +107,10 @@ $ python main.py --arch alexnet --mode mix -s 4 --resume ../logs/models/alexnet_
 
 ### Multi GPUs
 If you want to use multi GPUs trainig, see [pytorch imagenet trainning example][pytorch-imagenet].
+e.g.:
+```bash 
+$ python main.py -a resnet50 --seed 42 --lr 0.2 --mode normal --epochs 60 -b 512 --dist-url 'tcp://127.0.0.1:10000' --dist-backend 'nccl' --multiprocessing-distributed --world-size 1 --rank 0 -n resnet50_normal_b512
+```
 
 ## citation
 Training scripts and functions are based on [pytorch tutorial][pytorch-tutorial] and [pytorch imagenet trainning example][pytorch-imagenet].
