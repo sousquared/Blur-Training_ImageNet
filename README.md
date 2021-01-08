@@ -43,6 +43,10 @@ usage example:
 ```bash
 $ python main.py --arch alexnet --mode normal -e 60 -b 64 --lr 0.01 -n alexnet_normal
 ```
+You can also spesify GPU by `--gpu`
+```bash
+$ python -u main.py --gpu 0 -a alexnet --mode normal -n alexnet_normal
+```
 
 - **all**  
 This mode blurs ALL images in the training mode.  
@@ -65,6 +69,13 @@ usage example:
 $ python main.py --arch alexnet --mode single-step -s 1 -n alexnet_single-step_s1
 ```
 
+- **reversed-single-step**    
+This mode is reversed order of single-step (blurs second half epochs).
+usage example:  
+```bash
+$ python -u main.py --gpu 3 -a alexnet --mode reversed-single-step --reverse-sigma 1 -n alexnet_reversed-single-step_s1
+```
+
 - **multi-steps**  
 This mode blurs images step by step (e.g. every 10 epochs).  
 usage example:  
@@ -85,6 +96,9 @@ usage example:
 ```bash
 $ python main.py --arch alexnet --mode mix -s 4 --resume ../logs/models/alexnet_mix_s4/model_060.pth.tar -n alexnet_mix_s4_from60e 
 ```
+
+### Multi GPUs
+If you want to use multi GPUs trainig, see [pytorch imagenet trainning example][pytorch-imagenet].
 
 ## citation
 Training scripts and functions are based on [pytorch tutorial][pytorch-tutorial] and [pytorch imagenet trainning example][pytorch-imagenet].
