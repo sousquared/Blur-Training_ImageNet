@@ -116,12 +116,12 @@ def main():
     os.makedirs('../logs/tb', exist_ok=True)
 
     outputs_path = '../logs/outputs/{}.log'.format(args.exp_name)
-    if os.path.exists(outputs_path):
+    if not args.resume and os.path.exists(outputs_path):
         print('ERROR: This experiment name is already used. \
                 Use another name for this experiment by \'--exp-name\'')
         sys.exit()
     # recording outputs
-    sys.stdout = open(outputs_path, 'w')
+    sys.stdout = open(outputs_path, 'a')
     sys.stderr = open(outputs_path, 'a')
 
     if args.seed is not None:
