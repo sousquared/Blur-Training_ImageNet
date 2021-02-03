@@ -1,13 +1,12 @@
 import shutil
 
+import cv2
+import numpy as np
 import torch
 from torchvision import models
 
-import numpy as np
-import cv2
 
-
-def GaussianBlurAll(imgs, sigma, kernel_size=(0,0)) -> torch.Tensor:
+def GaussianBlurAll(imgs, sigma, kernel_size=(0, 0)) -> torch.Tensor:
     """
     Args:
         imgs: Images (torch.Tensor)
@@ -23,15 +22,17 @@ def GaussianBlurAll(imgs, sigma, kernel_size=(0,0)) -> torch.Tensor:
         imgs = imgs.numpy()
         imgs_list = []
         for img in imgs:
-             imgs_list.append(cv2.GaussianBlur(
-                 img.transpose(1, 2, 0), kernel_size, sigma))
+            imgs_list.append(
+                cv2.GaussianBlur(img.transpose(1, 2, 0), kernel_size, sigma)
+            )
         imgs_list = np.array(imgs_list)
         imgs_list = imgs_list.transpose(0, 3, 1, 2)
         return torch.from_numpy(imgs_list)
-    
+
 
 def adjust_multi_steps(epoch: int):
-    """For 'multi-steps' mode. Return sigma based on current epoch of training.
+    """For 'multi-steps' mode.
+        Return sigma based on current epoch of training.
     Args:
         epoch: current epoch of training
     Returns: sigma
@@ -69,13 +70,13 @@ def adjust_learning_rate(optimizer, epoch, args, every=20):
     """Sets the learning rate to the initial LR decayed by 10 every 20 epochs"""
     lr = args.lr * (0.1 ** (epoch // every))
     for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
+        param_group["lr"] = lr
 
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
 
-    def __init__(self, name, fmt=':f'):
+    def __init__(self, name, fmt=":f"):
         self.name = name
         self.fmt = fmt
         self.reset()
@@ -93,7 +94,7 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
     def __str__(self):
-        fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
+        fmtstr = "{name} {val" + self.fmt + "} ({avg" + self.fmt + "})"
         return fmtstr.format(**self.__dict__)
 
 
@@ -106,12 +107,12 @@ class ProgressMeter(object):
     def display(self, batch):
         entries = [self.prefix + self.batch_fmtstr.format(batch)]
         entries += [str(meter) for meter in self.meters]
-        print('\t'.join(entries))
+        print("\t".join(entries))
 
     def _get_batch_fmtstr(self, num_batches):
         num_digits = len(str(num_batches // 1))
-        fmt = '{:' + str(num_digits) + 'd}'
-        return '[' + fmt + '/' + fmt.format(num_batches) + ']'
+        fmt = "{:" + str(num_digits) + "d}"
+        return "[" + fmt + "/" + fmt.format(num_batches) + "]"
 
 
 def accuracy(output, target, topk=(1,)):
@@ -132,57 +133,61 @@ def accuracy(output, target, topk=(1,)):
 
 
 def save_checkpoint(state, is_best, param_path, epoch):
-    filename = param_path + 'checkpoint.pth.tar'
+    filename = param_path + "checkpoint.pth.tar"
     torch.save(state, filename)
     if is_best:
-        shutil.copyfile(filename, param_path + 'model_best.pth.tar')
+        shutil.copyfile(filename, param_path + "model_best.pth.tar")
 
 
 def save_model(state, param_path, epoch):
-    filename = param_path + 'epoch_{}.pth.tar'.format(epoch)
+    filename = param_path + "epoch_{}.pth.tar".format(epoch)
     torch.save(state, filename)
 
 
-def load_model(model_path, arch='alexnet'):
-    """Load model. 
+def load_model(model_path, arch="alexnet"):
+    """Load model.
     Args:
         model_path: Path to the pytorch saved file of the model you want to use
         arch: Architecture of CNN
-    Returns: CNN model 
+    Returns: CNN model
     """
-    checkpoint = torch.load(model_path, map_location='cuda:0')
+    checkpoint = torch.load(model_path, map_location="cuda:0")
     model = models.__dict__[arch]()
     try:
-        model.load_state_dict(checkpoint['state_dict'])
+        model.load_state_dict(checkpoint["state_dict"])
     except RuntimeError:
         model.features = torch.nn.DataParallel(model.features)
-        model.load_state_dict(checkpoint['state_dict'])
+        model.load_state_dict(checkpoint["state_dict"])
     return model
 
 
 def print_settings(model, args):
-    print('=' * 5 + ' settings ' + '=' * 5)
-    print('TRAINING MODE: {}'.format(args.mode.capitalize()))
-    if args.mode == 'mix':
-        print('Sigma: {}'.format(args.sigma))
-    elif args.mode == 'single-step':
-        print('## NO BLUR FROM EPOCH {:d}'.format(args.epochs // 2))
-        print('Sigma: {}'.format(args.sigma))
-    elif args.mode == 'reversed-single-step':
-        print('## NO BLUR TILL EPOCH {:d}'.format(args.epochs // 2))
-        print('Sigma: {}'.format(args.sigma))
-    elif args.mode == 'multi-steps':
-        print('Step: 1-10 -> 11-20 -> 21-30 -> 31-40 -> 41-{}'.format(args.epochs))
-        print('Sigma: 4 -> 3 -> 2 -> 1 -> none')
-        print('#' * 20)
-    elif args.mode == 'all':
-        print('Sigma: {}'.format(args.sigma))
+    print("=" * 5 + " settings " + "=" * 5)
+    print("TRAINING MODE: {}".format(args.mode.capitalize()))
+    if args.mode == "mix":
+        print("Sigma: {}".format(args.sigma))
+    elif args.mode == "single-step":
+        print("## NO BLUR FROM EPOCH {:d}".format(args.epochs // 2))
+        print("Sigma: {}".format(args.sigma))
+    elif args.mode == "reversed-single-step":
+        print("## NO BLUR TILL EPOCH {:d}".format(args.epochs // 2))
+        print("Sigma: {}".format(args.sigma))
+    elif args.mode == "multi-steps":
+        print("Step: 1-10 -> 11-20 -> 21-30 -> 31-40 -> 41-{}".format(args.epochs))
+        print("Sigma: 4 -> 3 -> 2 -> 1 -> none")
+        print("#" * 20)
+    elif args.mode == "all":
+        print("Sigma: {}".format(args.sigma))
     if args.blur_val:
-        print('VALIDATION MODE: blur-val')
-    print('Batch size: {}'.format(args.batch_size))
-    print('Epochs: {}'.format(args.epochs))
-    print('Initial Learning rate: {} (It will be decayed by 10 every 20 epochs)'.format(args.lr))
-    print('Weight_decay: {}'.format(args.weight_decay))
+        print("VALIDATION MODE: blur-val")
+    print("Batch size: {}".format(args.batch_size))
+    print("Epochs: {}".format(args.epochs))
+    print(
+        "Initial Learning rate: {} (It will be decayed by 10 every 20 epochs)".format(
+            args.lr
+        )
+    )
+    print("Weight_decay: {}".format(args.weight_decay))
     print()
     print(model)
-    print('=' * 20)
+    print("=" * 20)
