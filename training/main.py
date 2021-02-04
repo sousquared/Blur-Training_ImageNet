@@ -16,8 +16,21 @@ import torch.utils.data.distributed
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.utils.tensorboard import SummaryWriter
+from torchvision import models
 
-from utils import *
+from utils import (
+    save_model,
+    GaussianBlurAll,
+    RandomGaussianBlurAll,
+    adjust_multi_steps,
+    adjust_multi_steps_cbt,
+    adjust_learning_rate,
+    AverageMeter,
+    accuracy,
+    save_checkpoint,
+    ProgressMeter,
+    print_settings,
+)
 
 ###################################################################
 # TODO: set path to ImageNet
@@ -90,7 +103,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "-p",
-    "--print-freq",
+    "--print_freq",
     default=100,
     type=int,
     metavar="N",
@@ -152,6 +165,7 @@ parser.add_argument(
         "normal",
         "all",
         "mix",
+        "random-mix",
         "single-step",
         "reversed-single-step",
         "fixed-single-step",
@@ -173,6 +187,18 @@ parser.add_argument(
 )
 parser.add_argument(
     "--sigma", "-s", type=float, default=1, help="Sigma of Gaussian Blur."
+)
+parser.add_argument(
+    "--min_sigma",
+    type=float,
+    default=0,
+    help="Minimum sigma of Gaussian Kernel (Gaussian Blur) for random-mix training.",
+)
+parser.add_argument(
+    "--max_sigma",
+    type=float,
+    default=5,
+    help="Maximum sigma of Gaussian Kernel (Gaussian Blur) for random-mix training.",
 )
 parser.add_argument(
     "--reverse-sigma",
@@ -521,6 +547,11 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
             # blur first half images
             half1 = GaussianBlurAll(half1, args.sigma)
             images = torch.cat((half1, half2))
+        elif args.mode == "random-mix":
+            half1, half2 = inputs.chunk(2)
+            # blur first half images
+            half1 = RandomGaussianBlurAll(half1, args.min_sigma, args.max_sigma)
+            inputs = torch.cat((half1, half2))
         else:
             images = GaussianBlurAll(images, args.sigma)
 
