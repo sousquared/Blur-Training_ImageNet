@@ -548,10 +548,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
             half1 = GaussianBlurAll(half1, args.sigma)
             images = torch.cat((half1, half2))
         elif args.mode == "random-mix":
-            half1, half2 = inputs.chunk(2)
+            half1, half2 = images.chunk(2)
             # blur first half images
             half1 = RandomGaussianBlurAll(half1, args.min_sigma, args.max_sigma)
-            inputs = torch.cat((half1, half2))
+            images = torch.cat((half1, half2))
         else:
             images = GaussianBlurAll(images, args.sigma)
 
