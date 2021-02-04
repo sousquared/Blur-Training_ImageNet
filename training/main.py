@@ -66,7 +66,7 @@ parser.add_argument(
     "--epochs", default=60, type=int, metavar="N", help="number of total epochs to run"
 )
 parser.add_argument(
-    "--start-epoch",
+    "--start_epoch",
     default=0,
     type=int,
     metavar="N",
@@ -74,7 +74,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "-b",
-    "--batch-size",
+    "--batch_size",
     default=256,
     type=int,
     metavar="N",
@@ -84,7 +84,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--lr",
-    "--learning-rate",
+    "--learning_rate",
     default=0.01,
     type=float,
     metavar="LR",
@@ -94,7 +94,7 @@ parser.add_argument(
 parser.add_argument("--momentum", default=0.9, type=float, metavar="M", help="momentum")
 parser.add_argument(
     "--wd",
-    "--weight-decay",
+    "--weight_decay",
     default=1e-4,
     type=float,
     metavar="W",
@@ -127,7 +127,7 @@ parser.add_argument(
     "--pretrained", dest="pretrained", action="store_true", help="use pre-trained model"
 )
 parser.add_argument(
-    "--world-size",
+    "--world_size",
     default=-1,
     type=int,
     help="number of nodes for distributed training",
@@ -136,20 +136,20 @@ parser.add_argument(
     "--rank", default=-1, type=int, help="node rank for distributed training"
 )
 parser.add_argument(
-    "--dist-url",
+    "--dist_url",
     default="tcp://224.66.41.62:23456",
     type=str,
     help="url used to set up distributed training",
 )
 parser.add_argument(
-    "--dist-backend", default="nccl", type=str, help="distributed backend"
+    "--dist_backend", default="nccl", type=str, help="distributed backend"
 )
 parser.add_argument(
     "--seed", default=42, type=int, help="seed for initializing training. "
 )
 parser.add_argument("--gpu", default=None, type=int, help="GPU id to use.")
 parser.add_argument(
-    "--multiprocessing-distributed",
+    "--multiprocessing_distributed",
     action="store_true",
     help="Use multi-processing distributed training to launch "
     "N processes per node, which has N GPUs. This is the "
@@ -157,7 +157,7 @@ parser.add_argument(
     "multi node data parallel training",
 )
 ### Blur-Training additional arguments
-parser.add_argument("--exp-name", "-n", type=str, default="", help="Experiment name.")
+parser.add_argument("--exp_name", "-n", type=str, default="", help="Experiment name.")
 parser.add_argument(
     "--mode",
     type=str,
@@ -175,10 +175,10 @@ parser.add_argument(
     help="Training mode.",
 )
 parser.add_argument(
-    "--blur-val", action="store_true", default=False, help="Blur validation data."
+    "--blur_val", action="store_true", default=False, help="Blur validation data."
 )
 parser.add_argument(
-    "--kernel-size",
+    "--kernel_size",
     "-k",
     type=int,
     nargs=2,
@@ -201,19 +201,19 @@ parser.add_argument(
     help="Maximum sigma of Gaussian Kernel (Gaussian Blur) for random-mix training.",
 )
 parser.add_argument(
-    "--reverse-sigma",
+    "--reverse_sigma",
     type=float,
     default=1,
     help="Sigma of Gaussian Blur. (reversed-single-step)",
 )
 parser.add_argument(
-    "--init-sigma",
+    "--init_sigma",
     type=float,
     default=2,
     help="Initial Sigma of Gaussian Blur. (multi-steps-cbt)",
 )
 parser.add_argument(
-    "--cbt-rate", type=float, default=0.9, help="Blur decay rate (multi-steps-cbt)"
+    "--cbt_rate", type=float, default=0.9, help="Blur decay rate (multi-steps-cbt)"
 )
 
 best_acc1 = 0
@@ -231,7 +231,7 @@ def main():
     if not args.resume and os.path.exists(outputs_path):
         print(
             "ERROR: This experiment name is already used. \
-                Use another name for this experiment by '--exp-name'"
+                Use another name for this experiment by '--exp_name'"
         )
         sys.exit()
     # recording outputs

@@ -30,7 +30,7 @@ $ cd training
 $ python main.py --arch [ARCHITECTURE NAME] --mode [TRAINING MODE] -n [EXPERIMENT NAME] 
 ```  
 
-For `main.py`, you need to use `--exp-name` or `-n` option to define your experiment's name. 
+For `main.py`, you need to use `--exp_name` or `-n` option to define your experiment's name. 
 Then the experiment's name is used for managing results under `logs/` directory.
 `logs/` will automatically be created when you run `main.py`.   
 You can choose the training mode from:   
@@ -88,7 +88,7 @@ python -u main.py -a alexnet --mode fixed-single-step -s 1 -n alexnet_fixed-sing
 This mode is reversed order of single-step (blurs second half epochs).
 usage example:  
 ```bash
-$ python -u main.py -a alexnet --mode reversed-single-step --reverse-sigma 1 -n alexnet_reversed-single-step_s1
+$ python -u main.py -a alexnet --mode reversed-single-step --reverse_sigma 1 -n alexnet_reversed-single-step_s1
 ```
 
 - **multi-steps**  
@@ -98,11 +98,11 @@ usage example:
 $ python main.py --arch alexnet --mode multi-steps -n alexnet_multi-steps
 ```
 
-- `--blur-val`   
+- `--blur_val`   
 This option blurs validation data as well. 
 usage example:  
 ```bash
-$ python main.py --arch alexnet --mode mix -s 4 --blur-val -n alexnet_mix_lur-val_s4
+$ python main.py --arch alexnet --mode mix -s 4 --blur_val -n alexnet_mix_lur-val_s4
 ```
 
 - `--resume [PATH TO SAVED MODEL]`   
@@ -116,7 +116,7 @@ $ python main.py --arch alexnet --mode mix -s 4 --resume ../logs/models/alexnet_
 If you want to use multi GPUs trainig, see [pytorch imagenet trainning example][pytorch-imagenet].
 e.g.:
 ```bash 
-$ python main.py -a resnet50 --seed 42 --lr 0.2 --mode normal --epochs 60 -b 512 --dist-url 'tcp://127.0.0.1:10000' --dist-backend 'nccl' --multiprocessing-distributed --world-size 1 --rank 0 -n resnet50_normal_b512
+$ python main.py -a resnet50 --seed 42 --lr 0.2 --mode normal --epochs 60 -b 512 --dist_url 'tcp://127.0.0.1:10000' --dist_backend 'nccl' --multiprocessing_distributed --world_size 1 --rank 0 -n resnet50_normal_b512
 ```
 
 ## citation
