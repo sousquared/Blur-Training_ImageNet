@@ -109,7 +109,7 @@ $ python main.py --arch alexnet --mode mix -s 4 --blur_val -n alexnet_mix_lur-va
 This option trains your saved model starting from the latest epoch.  
 usage example:  
 ```bash
-$ python main.py --arch alexnet --mode mix -s 4 --resume ../logs/models/alexnet_mix_s4/model_060.pth.tar -n alexnet_mix_s4_from60e 
+$ python main.py --arch alexnet --mode mix -s 4 -n alexnet_mix_s4 --resume ../logs/models/alexnet_mix_s4/checkpoint.pth.tar 
 ```
 
 ### Multi GPUs
